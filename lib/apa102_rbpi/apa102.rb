@@ -1,6 +1,21 @@
 require 'pi_piper'
 
 module Apa102Rbpi
+
+  class SpiSimulator
+    def self.begin
+      yield self
+    end
+
+    def self.clock(data)
+      puts "CLOCK #{data.inspect}"
+    end
+
+    def self.write(data)
+      puts "WRITE #{data.inspect}"
+    end
+  end
+
   class Apa102
     include PiPiper
 
@@ -24,6 +39,8 @@ module Apa102Rbpi
 
       @led_frames = []
       @end_frame = [0x00] * (@num_leds / 2.0).ceil
+
+      @interface = opts[:simulate] ? SpiSimulator : Spi
 
       clear!
     end
@@ -61,7 +78,7 @@ module Apa102Rbpi
 
     # Writes out the led frames to the strip
     def show!
-      Spi.begin do |s|
+      @interface.begin do |s|
         s.clock(@spi_hz)
         s.write(START_FRAME + @led_frames + @end_frame)
       end
